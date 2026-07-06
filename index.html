@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <title>角色冒險倒數魔法樂園-優化版</title>
+  <!-- 引入 p5.js 核心庫 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    :root { --menu-bg: #3E2723; --panel-bg: #FFFFFF; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; background-color: #FFFDE7; font-family: "Microsoft JhengHei", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    
+    /* 頂部導覽列 */
+    .menu-bar { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 600px; gap: 4px; padding: 10px 5px; }
+    .menu-btn { font-size: 13px; font-weight: bold; padding: 8px 2px; border: 2px solid var(--menu-bg); border-radius: 10px; background: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 58px; }
+    .menu-btn.active { background: #FFD600; color: var(--menu-bg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+    .menu-btn img { width: 18px; height: 18px; object-fit: contain; }
+    .menu-btn span { font-size: 15px; }
+
+    .main-container { width: 100%; max-width: 500px; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+    .mode-panel { background: var(--panel-bg); border-radius: 20px; padding: 18px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); text-align: center; }
+    
+    /* 橫向滾動選擇列 */
+    .selector-container { display: none; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .selector-row { display: flex; justify-content: flex-start; gap: 6px; overflow-x: auto; padding: 4px 5px; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+    .selector-row::-webkit-scrollbar { display: none; }
+    
+    .select-btn { font-size: 14px; font-weight: bold; padding: 6px 12px; border-radius: 12px; border: 2px solid #795548; background: white; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .select-btn.active { background: #795548; color: white; border-color: #5D4037; }
+    .select-btn img { width: 20px; height: 20px; object-fit: contain; }
+    .select-btn span { font-size: 18px; line-height: 1; }
+
+    #big-timer { font-size: 120px; font-weight: bold; color: #1565C0; margin: 55px0pxpx 0; text-shadow: 4px 4px 0px #E3F2FD; cursor: pointer; }
+    
+    /* 跑道與中心終點 */
+    #track-area { position: relative; width: 240px; height: 240px; border: 12px solid #37474F; border-radius: 50%; margin: 15px auto; background: #78909C; }
+    #home-icon { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); z-index: 2; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; }
+    #home-icon img { width: 100%; height: 100%; object-fit: contain; }
+    #home-icon span { font-size: 42px; }
+    
+    /* ⚡ 關鍵優化：將車車指針 z-index 設為 3，強制壓在房子 (z-index: 2) 的前面！ */
+    #racing-pointer { position: absolute; top: 0; left: 50%; width: 10px; height: 120px; transform-origin: bottom center; transform: translateX(-50%) rotate(0deg); transition: transform 1s linear; z-index: 3; }
+    .car-on-track { position: absolute; top: -25px; left: -21px; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; }
+    .car-on-track img { width: 100%; height: 100%; object-fit: contain; }
+    .car-on-track span { font-size: 42px; }
+    
+    .timer-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 55px0px; }
+    .btn-row { display: flex; justify-content: center; gap: 8px; }
+    .action-btn { font-size: 16px; font-weight: bold; padding: 10px 16px; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 0 #555; }
+    .action-btn:active { transform: translateY(4px); box-shadow: none; }
+    .b-blue { background: #2196F3; box-shadow: 0 4px 0 #0D47A1; }
+    .b-red { background: #F44336; box-shadow: 0 4px 0 #B71C1C; }
+    .b-orange { background: #FF9800; box-shadow: 0 4px 0 #E65100; }
+    .b-purple { background: #9C27B0; box-shadow: 0 4px 0 #4A148C; }
+    input[type="number"] { font-size: 20px; width: 60px; text-align: center; border: 3px solid #9C27B0; border-radius: 10px; padding: 2px; }
+    
+    #canvas-holder { width: 100%; aspect-ratio: 4 / 3; background: #FFFFFF; border-radius: 15px; overflow: hidden; border: 4px solid #FFE082; }
+    .canvas-selectors { display: flex; justify-content: center; gap: 10px; margin-bottom: 55px0px; }
+    .stamp-btn { font-size: 16px; padding: 8px 12px; border-radius: 10px; border: 2px solid #FF8F00; background: white; cursor: pointer; }
+    .stamp-btn.active { background: #FF8F00; color: white; }
+    
+    .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+    .n-btn { font-size: 28px; font-weight: bold; background: #FFF9C4; border: 3px solid #FBC02D; border-radius: 12px; padding: 10px 2px; cursor: pointer; }
+    
+    #car-stage { min-height: 55px; margin: 8px 0; display: flex; justify-content: center; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .stage-img { width: 45px; height: 45px; object-fit: contain; }
+    .stage-txt { font-size: 42px; }
+    #status-msg { font-size: 26px; color: #D32F2F; font-weight: bold; min-height: 32px; }
+  </style>
+</head>
+<body>
+
+  <div class="menu-bar">
+    <button id="nav-clock" class="menu-btn active" onclick="switchTab('clock')"></button>
+    <button id="nav-timer" class="menu-btn" onclick="switchTab('timer')"></button>
+    <button id="nav-racing" class="menu-btn" onclick="switchTab('racing')"></button>
+    <button id="nav-canvas" class="menu-btn" onclick="switchTab('canvas')"></button>
+    <button id="nav-learn" class="menu-btn" onclick="switchTab('learn')"></button>
+  </div>
+
+  <div class="main-container">
+    <div id="panel-display" class="mode-panel">
+      
+      <!-- 自由挑選區 (新增獨立 ID 方便單獨控制隱藏) -->
+      <div id="selector-zone" class="selector-container">
+        <div id="runner-title" style="font-size:14px; font-weight:bold; color:#5D4037; text-align:left; margin-left:5px;">🌟 挑選今天的主角：</div>
+        <div id="runner-buttons" class="selector-row"></div>
+        
+        <div id="dest-title" style="font-size:14px; font-weight:bold; color:#5D4037; text-align:left; margin-left:5px; margin-top:4px;">🏡 挑選想回到的家：</div>
+        <div id="destination-buttons" class="selector-row"></div>
+      </div>
+
+      <div id="big-timer" onclick="clickSpeakTime()">00:00</div>
+      
+      <div id="track-area" style="display:none;">
+        <div id="home-icon"></div>
+        <div id="racing-pointer"><div class="car-on-track" id="track-actor"></div></div>
+      </div>
+
+      <div id="car-stage"></div>
+      <div id="status-msg"></div>
+
+      <div id="timer-ui" class="timer-controls" style="display:none;">
+        <div class="btn-row">
+          <button class="action-btn b-blue" onclick="triggerCountdown(1)">1分鐘</button>
+          <button class="action-btn b-red" onclick="triggerCountdown(3)">3分鐘</button>
+          <button class="action-btn b-orange" onclick="triggerCountdown(5)">5分鐘</button>
+        </div>
+        <div class="btn-row" style="margin-top:50px;">
+          <span>自訂：</span>
+          <input type="number" id="custom-min" value="2" min="1" max="60">
+          <span>分</span>
+          <button class="action-btn b-purple" style="padding:5px 12px; font-size:15px;" onclick="triggerCountdown(document.getElementById('custom-min').value)">確認出發 💨</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-canvas" class="mode-panel" style="display:none;">
+      <div class="canvas-selectors">
+        <button id="stamp-car" class="stamp-btn active" onclick="setStamp('car')">🚗 汽車模式</button>
+        <button id="stamp-animal" class="stamp-btn" onclick="setStamp('animal')">🦁 動物模式</button>
+      </div>
+      <div id="canvas-holder"></div>
+    </div>
+
+    <div id="panel-learn" class="mode-panel" style="display:none;">
+      <div style="font-weight:bold; font-size:18px; color:#5D4037;">🚌 點數字，跟我一起讀口訣！</div>
+      <div class="num-grid">
+        <button class="n-btn" onclick="pressMnemonic(1)">1</button>
+        <button class="n-btn" onclick="pressMnemonic(2)">2</button>
+        <button class="n-btn" onclick="pressMnemonic(3)">3</button>
+        <button class="n-btn" onclick="pressMnemonic(4)">4</button>
+        <button class="n-btn" onclick="pressMnemonic(5)">5</button>
+        <button class="n-btn" onclick="pressMnemonic(6)">6</button>
+        <button class="n-btn" onclick="pressMnemonic(7)">7</button>
+        <button class="n-btn" onclick="pressMnemonic(8)">8</button>
+        <button class="n-btn" onclick="pressMnemonic(9)">9</button>
+        <button class="n-btn" onclick="pressMnemonic(0)">0</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeTab = 'clock';
+    let loopTimer = null;
+    let secondsLeft = 0;
+    let initialSeconds = 0;
+    let drawingStamp = 'car';
+    let traceParticles = [];
+    let p5Images = {};
+
+    // ==========================================
+    // 自訂百寶箱
+    // ==========================================
+    const runnerChoices = [
+      { label: "車車", icon: "https://cdn-icons-png.flaticon.com/128/2367/2367773.png" },        
+      { label: "獅子", icon: "https://cdn-icons-png.flaticon.com/128/6583/6583476.png" },
+      { label: "恐龍", icon: "https://cdn-icons-png.flaticon.com/128/6260/6260379.png" },
+      { label: "火箭", icon: "🚀" },
+      { label: "獨角獸", icon: "🦄" }       
+    ];
+
+    const destinationChoices = [
+      { label: "房子", icon: "https://cdn-icons-png.flaticon.com/128/2163/2163350.png" },
+      { label: "城堡", icon: "🏰" },
+      { label: "星球", icon: "🪐" },
+      { label: "基地", icon: "🛸" },
+      { label: "森林", icon: "https://cdn-icons-png.flaticon.com/128/9092/9092343.png" }
+    ];
+
+    let activeRunnerIdx = 0;
+    let activeDestIdx = 0;
+
+    const navButtonsConfig = {
+      clock:  { label: "時鐘", icon: "https://cdn-icons-png.flaticon.com/128/3976/3976650.png" },
+      timer:  { label: "倒數", icon: "🔢" },
+      racing: { label: "回家", icon: "https://cdn-icons-png.flaticon.com/128/2163/2163350.png" },
+      canvas: { label: "畫布", icon: "🎨" },
+      learn:  { label: "口訣", icon: "🧠" }
+    };
+
+    const mnemonicData = {
+      1: { text: "鉛筆 1", icon: "✏️" }, 
+      2: { text: "鴨子 2", icon: "🦆" },
+      3: { text: "蝴蝶 3", icon: "🦋" },
+      4: { text: "帆船 4", icon: "⛵" },
+      5: { text: "勾勾 5", icon: "🪝" },
+      6: { text: "大肚 6", icon: "🤰" },
+      7: { text: "拐杖 7", icon: "🦯" },
+      8: { text: "雪人 8", icon: "☃️" },
+      9: { text: "氣球 9", icon: "🎈" },
+      0: { text: "甜甜圈 0", icon: "🍩" }
+    };
+
+    let carPool = ['https://cdn-icons-png.flaticon.com/128/2367/2367773.png', '🚓', '🚒', '🚜', '🚌', '🚚'];
+    let animalPool = ['https://cdn-icons-png.flaticon.com/128/6583/6583476.png', 'https://cdn-icons-png.flaticon.com/128/6583/6583476.png', '🐘', '🐸', '🐵', '🐼', '🐰','https://cdn-icons-png.flaticon.com/128/6260/6260379.png'];
+    // ==========================================
+
+    function isUrl(str) { return str.startsWith('http'); }
+
+    function renderIconToElement(targetEl, iconStr, className="stage-txt") {
+      if(isUrl(iconStr)) {
+        targetEl.innerHTML = `<img src="${iconStr}" class="stage-img">`;
+      } else {
+        targetEl.innerHTML = `<span class="${className}">${iconStr}</span>`;
+      }
+    }
+
+    function buildSelectors() {
+      // 主角列
+      const rContainer = document.getElementById('runner-buttons');
+      rContainer.innerHTML = "";
+      runnerChoices.forEach((item, idx) => {
+        let btn = document.createElement('button');
+        btn.className = `select-btn ${idx === activeRunnerIdx ? 'active' : ''}`;
+        btn.onclick = () => selectRunner(idx);
+        
+        let iconSpan = document.createElement('div');
+        if(isUrl(item.icon)) { iconSpan.innerHTML = `<img src="${item.icon}">`; }
+        else { iconSpan.innerHTML = `<span>${item.icon}</span>`; }
+        
+        let txtSpan = document.createElement('span');
+        txtSpan.innerText = item.label;
+        txtSpan.style.fontSize = "13px";
+        
+        btn.appendChild(iconSpan);
+        btn.appendChild(txtSpan);
+        rContainer.appendChild(btn);
+      });
+
+      // 終點列
+      const dContainer = document.getElementById('destination-buttons');
+      dContainer.innerHTML = "";
+      destinationChoices.forEach((item, idx) => {
+        let btn = document.createElement('button');
+        btn.className = `select-btn ${idx === activeDestIdx ? 'active' : ''}`;
+        btn.onclick = () => selectDestination(idx);
+        
+        let iconSpan = document.createElement('div');
+        if(isUrl(item.icon)) { iconSpan.innerHTML = `<img src="${item.icon}">`; }
+        else { iconSpan.innerHTML = `<span>${item.icon}</span>`; }
+        
+        let txtSpan = document.createElement('span');
+        txtSpan.innerText = item.label;
+        txtSpan.style.fontSize = "13px";
+        
+        btn.appendChild(iconSpan);
+        btn.appendChild(txtSpan);
+        dContainer.appendChild(btn);
+      });
+    }
+
+    function selectRunner(idx) {
+      activeRunnerIdx = idx;
+      buildSelectors();
+      let trackActor = document.getElementById('track-actor');
+      renderIconToElement(trackActor, runnerChoices[idx].icon, "");
+      if(secondsLeft > 0) { updateVisualStage(); } 
+      else { renderIconToElement(document.getElementById('car-stage'), runnerChoices[idx].icon); }
+      speak(`選定主角：${runnerChoices[idx].label}`);
+    }
+
+    function selectDestination(idx) {
+      activeDestIdx = idx;
+      buildSelectors();
+      renderIconToElement(document.getElementById('home-icon'), destinationChoices[idx].icon, "");
+      speak(`選定終點：${destinationChoices[idx].label}`);
+    }
+
+    function initInterfaceIcons() {
+      for (let key in navButtonsConfig) {
+        let btn = document.getElementById('nav-' + key);
+        if(btn) {
+          btn.innerHTML = "";
+          let iconWrapper = document.createElement('div');
+          if(isUrl(navButtonsConfig[key].icon)) { iconWrapper.innerHTML = `<img src="${navButtonsConfig[key].icon}">`; }
+          else { iconWrapper.innerHTML = `<span>${navButtonsConfig[key].icon}</span>`; }
+          let textWrapper = document.createElement('div');
+          textWrapper.innerText = navButtonsConfig[key].label;
+          btn.appendChild(iconWrapper);
+          btn.appendChild(textWrapper);
+        }
+      }
+      buildSelectors();
+      renderIconToElement(document.getElementById('home-icon'), destinationChoices[activeDestIdx].icon, "");
+    }
+
+    function speak(txt) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        let u = new SpeechSynthesisUtterance(txt); u.lang = 'zh-TW'; window.speechSynthesis.speak(u);
+      }
+    }
+
+    function switchTab(tabName) {
+      activeTab = tabName; clearInterval(loopTimer); secondsLeft = 0;
+      document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('nav-' + tabName).classList.add('active');
+      
+      document.getElementById('panel-display').style.display = (tabName==='clock'||tabName==='timer'||tabName==='racing') ? 'block' : 'none';
+      document.getElementById('panel-canvas').style.display = (tabName==='canvas') ? 'block' : 'none';
+      document.getElementById('panel-learn').style.display = (tabName==='learn') ? 'block' : 'none';
+      
+      // ⚡ 核心優化：如果是純倒數，直接把「選房子」的標題跟按鈕排全部隱藏
+      document.getElementById('selector-zone').style.display = (tabName==='timer'||tabName==='racing') ? 'flex' : 'none';
+      document.getElementById('dest-title').style.display = (tabName==='racing') ? 'block' : 'none';
+      document.getElementById('destination-buttons').style.display = (tabName==='racing') ? 'flex' : 'none';
+      
+      document.getElementById('track-area').style.display = (tabName==='racing') ? 'block' : 'none';
+      document.getElementById('timer-ui').style.display = (tabName==='timer'||tabName==='racing') ? 'block' : 'none';
+      document.getElementById('status-msg').innerText = "";
+
+      if(tabName === 'clock') {
+        document.getElementById('car-stage').innerHTML = '<span class="stage-txt">⏰</span>';
+        launchClockMode(); speak("現在時間模式");
+      } else {
+        document.getElementById('big-timer').innerText = "00:00";
+        renderIconToElement(document.getElementById('car-stage'), runnerChoices[activeRunnerIdx].icon);
+        if(tabName === 'timer') speak("數字倒數模式");
+        if(tabName === 'racing') {
+          document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(0deg)`;
+          renderIconToElement(document.getElementById('track-actor'), runnerChoices[activeRunnerIdx].icon, "");
+          speak("跑回家模式");
+        }
+        if(tabName === 'canvas') { speak("魔法畫布"); resizeCanvasToContainer(); }
+        if(tabName === 'learn') speak("數字口訣大聲公");
+      }
+    }
+
+    function launchClockMode() {
+      const run = () => {
+        let d = new Date();
+        document.getElementById('big-timer').innerText = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+      };
+      run(); loopTimer = setInterval(run, 1000);
+    }
+
+    function clickSpeakTime() {
+      let t = document.getElementById('big-timer').innerText;
+      if(activeTab === 'clock') {
+        speak(`現在是 ${parseInt(t.split(':')[0])} 點 ${parseInt(t.split(':')[1])} 分`);
+      } else if(secondsLeft > 0) {
+        speak(`還剩下 ${Math.floor(secondsLeft/60)} 分 ${secondsLeft%60} 秒`);
+      }
+    }
+
+    function triggerCountdown(mins) {
+      mins = parseInt(mins); if(isNaN(mins) || mins <= 0) return;
+      clearInterval(loopTimer); secondsLeft = mins * 60; initialSeconds = secondsLeft;
+      document.getElementById('status-msg').innerText = "";
+      
+      let hero = runnerChoices[activeRunnerIdx].label;
+      let home = destinationChoices[activeDestIdx].label;
+      
+      // ⚡ 語音優化：純倒數模式時不唸出「回目的地」
+      if (activeTab === 'racing') {
+        speak(`小${hero}準備出發！倒數 ${mins} 分鐘回${home}`);
+      } else {
+        speak(`小${hero}準備出發！倒數 ${mins} 分鐘`);
+      }
+
+      loopTimer = setInterval(() => {
+        secondsLeft--;
+        document.getElementById('big-timer').innerText = `${Math.floor(secondsLeft/60).toString().padStart(2,'0')}:${(secondsLeft%60).toString().padStart(2,'0')}`;
+
+        if(activeTab === 'racing') {
+          document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(${(1-(secondsLeft/initialSeconds))*360}deg)`;
+        }
+        updateVisualStage();
+
+        if(secondsLeft <= 0) {
+          clearInterval(loopTimer);
+          document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(360deg)`;
+          if(activeTab === 'racing') {
+            document.getElementById('status-msg').innerText = `🎉 成功回到${home}囉！`;
+            speak(`時間到囉！小${hero}安全回到溫暖的${home}了！`);
+          } else {
+            document.getElementById('status-msg').innerText = "🎉 時間到！"; speak("時間到囉！");
+          }
+        }
+      }, 1000);
+    }
+
+    function updateVisualStage() {
+      let minsCount = Math.ceil(secondsLeft / 60);
+      let container = document.getElementById('car-stage');
+      container.innerHTML = "";
+      let icon = runnerChoices[activeRunnerIdx].icon;
+      for(let i=0; i<Math.min(minsCount, 10); i++) {
+        let span = document.createElement('span');
+        renderIconToElement(span, icon, "stage-txt");
+        container.appendChild(span);
+      }
+    }
+
+    function pressMnemonic(num) {
+      let info = mnemonicData[num]; speak(info.text);
+      document.getElementById('status-msg').innerText = info.text;
+      let container = document.getElementById('car-stage');
+      container.innerHTML = "";
+      let count = (num == 0) ? 1 : num;
+      for(let i=0; i<count; i++) {
+        let span = document.createElement('span');
+        renderIconToElement(span, info.icon, "stage-txt");
+        container.appendChild(span);
+      }
+    }
+
+    function setStamp(type) {
+      drawingStamp = type;
+      document.getElementById('stamp-car').classList.toggle('active', type === 'car');
+      document.getElementById('stamp-animal').classList.toggle('active', type === 'animal');
+      speak(type === 'car' ? "汽車模式" : "動物模式");
+    }
+    function clearCanvas() { traceParticles = []; speak("擦乾淨了"); }
+
+    // --- p5.js 繪圖引擎 ---
+    function setup() {
+      const holder = document.getElementById('canvas-holder');
+      const cv = createCanvas(holder.clientWidth, holder.clientHeight);
+      cv.parent('canvas-holder'); noStroke();
+    }
+
+    function draw() {
+      background(255);
+      for (let i = traceParticles.length - 1; i >= 0; i--) {
+        traceParticles[i].step(); traceParticles[i].render();
+        if (traceParticles[i].isDead()) { traceParticles.splice(i, 1); }
+      }
+      if (traceParticles.length === 0) {
+        fill(150, 150, 150, 160); textSize(15); textAlign(CENTER, CENTER);
+        text(drawingStamp === 'car' ? "🚗 滑動或點擊畫出車車" : "🦁 滑動或點擊呼叫動物", width / 2, height / 2);
+      }
+    }
+
+    function resizeCanvasToContainer() {
+      const holder = document.getElementById('canvas-holder');
+      if (holder && holder.clientWidth > 0) { resizeCanvas(holder.clientWidth, holder.clientHeight); }
+    }
+    function windowResized() { resizeCanvasToContainer(); }
+    function touchMoved() { if (activeTab === 'canvas' && mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) { spawnStamp(mouseX, mouseY); return false; } }
+    function touchStarted() { if (activeTab === 'canvas' && mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) { spawnStamp(mouseX, mouseY); return false; } }
+
+    function spawnStamp(x, y) {
+      let pool = (drawingStamp === 'car') ? carPool : animalPool;
+      let target = pool[Math.floor(random(pool.length))];
+      if(isUrl(target)) {
+        if(!p5Images[target]) { p5Images[target] = loadImage(target); }
+        traceParticles.push(new ToyParticle(x, y, p5Images[target], true));
+      } else {
+        traceParticles.push(new ToyParticle(x, y, target, false));
+      }
+    }
+
+    class ToyParticle {
+      constructor(x, y, content, isImg) {
+        this.x = x; this.y = y; this.content = content; this.isImg = isImg;
+        this.mx = random(-1.5, 1.5); this.my = random(-3, -0.5);
+        this.opacity = 255; this.scaleSize = random(26, 38);
+      }
+      step() { this.x += this.mx; this.y += this.my; this.opacity -= 4; }
+      render() {
+        push(); translate(this.x, this.y);
+        if(this.isImg) {
+          imageMode(CENTER); tint(255, this.opacity);
+          image(this.content, 0, 0, this.scaleSize, this.scaleSize);
+        } else {
+          fill(0, this.opacity); textAlign(CENTER, CENTER); textSize(this.scaleSize);
+          text(this.content, 0, 0);
+        }
+        pop();
+      }
+      isDead() { return this.opacity <= 0; }
+    }
+
+    initInterfaceIcons();
+    launchClockMode();
+  </script>
+</body>
+</html>
