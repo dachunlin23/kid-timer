@@ -55,7 +55,7 @@
     .b-purple { background: #9C27B0; box-shadow: 0 4px 0 #4A148C; }
     input[type="number"] { font-size: 20px; width: 60px; text-align: center; border: 3px solid #9C27B0; border-radius: 10px; padding: 2px; }
     
-    #canvas-holder { width: 100%; aspect-ratio: 4 / 3; background: #FFFFFF; border-radius: 15px; overflow: hidden; border: 4px solid #FFE082; }
+    #canvas-holder { width: 100%; aspect-ratio: 4 / 3; background: #FFFFFF; border-radius: 15px; overflow: hidden; border: 4px solid #FFE082;touch-action: none; }
     .canvas-selectors { display: flex; justify-content: center; gap: 10px; margin-bottom: 55px0px; }
     .stamp-btn { font-size: 16px; padding: 8px 12px; border-radius: 10px; border: 2px solid #FF8F00; background: white; cursor: pointer; }
     .stamp-btn.active { background: #FF8F00; color: white; }
@@ -439,8 +439,21 @@
       if (holder && holder.clientWidth > 0) { resizeCanvas(holder.clientWidth, holder.clientHeight); }
     }
     function windowResized() { resizeCanvasToContainer(); }
-    function touchMoved() { if (activeTab === 'canvas' && mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) { spawnStamp(mouseX, mouseY); return false; } }
-    function touchStarted() { if (activeTab === 'canvas' && mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) { spawnStamp(mouseX, mouseY); return false; } }
+    function touchMoved() { if (activeTab === 'canvas') {
+    if (touches.length > 0) {
+      let tx = touches[0].x;
+      let ty = touches[0].y;
+      if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
+        spawnStamp(tx, ty);
+        return false; } }
+    function touchStarted() {if (activeTab === 'canvas') {
+    // 檢查有沒有觸控點
+    if (touches.length > 0) {
+      let tx = touches[0].x;
+      let ty = touches[0].y;
+      if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
+        spawnStamp(tx, ty);
+        return false; } }
 
     function spawnStamp(x, y) {
       let pool = (drawingStamp === 'car') ? carPool : animalPool;
