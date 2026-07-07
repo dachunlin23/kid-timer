@@ -434,26 +434,38 @@
       }
     }
 
-    function resizeCanvasToContainer() {
+function resizeCanvasToContainer() {
       const holder = document.getElementById('canvas-holder');
       if (holder && holder.clientWidth > 0) { resizeCanvas(holder.clientWidth, holder.clientHeight); }
     }
+    
     function windowResized() { resizeCanvasToContainer(); }
-    function touchMoved() { if (activeTab === 'canvas') {
-    if (touches.length > 0) {
-      let tx = touches[0].x;
-      let ty = touches[0].y;
-      if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
-        spawnStamp(tx, ty);
-        return false; } }
-    function touchStarted() {if (activeTab === 'canvas') {
-    // 檢查有沒有觸控點
-    if (touches.length > 0) {
-      let tx = touches[0].x;
-      let ty = touches[0].y;
-      if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
-        spawnStamp(tx, ty);
-        return false; } }
+    
+    function touchMoved() { 
+      if (activeTab === 'canvas') {
+        if (touches.length > 0) {
+          let tx = touches[0].x;
+          let ty = touches[0].y;
+          if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
+            spawnStamp(tx, ty);
+            return false; 
+          } 
+        }
+      }
+    }
+    
+    function touchStarted() {
+      if (activeTab === 'canvas') {
+        if (touches.length > 0) {
+          let tx = touches[0].x;
+          let ty = touches[0].y;
+          if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
+            spawnStamp(tx, ty);
+            return false; 
+          } 
+        }
+      }
+    }
 
     function spawnStamp(x, y) {
       let pool = (drawingStamp === 'car') ? carPool : animalPool;
