@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <base target="_top">
   <title>角色冒險倒數魔法樂園-優化版</title>
-  <!-- 引入 p5.js 核心庫 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
   <style>
     :root { --menu-bg: #3E2723; --panel-bg: #FFFFFF; }
@@ -32,51 +31,50 @@
     .select-btn img { width: 20px; height: 20px; object-fit: contain; }
     .select-btn span { font-size: 18px; line-height: 1; }
 
-    #big-timer { font-size: 120px; font-weight: bold; color: #1565C0; margin: 55px0pxpx 0; text-shadow: 4px 4px 0px #E3F2FD; cursor: pointer; }
+    /* 🛠️ 修正打錯字：55px0pxpx 0 改為正常邊距 20px 0 */
+    #big-timer { font-size: 120px; font-weight: bold; color: #1565C0; margin: 20px 0; text-shadow: 4px 4px 0px #E3F2FD; cursor: pointer; }
     
     /* 跑道與中心終點 */
-   #track-area { 
-  position: relative; 
-  width: 240px; 
-  height: 240px; 
-  border-radius: 50%; 
-  margin: 15px auto; 
-  /* ⚡ 預設是灰色底 */
-  background: conic-gradient(#4CAF50 0deg, #37474F 0deg); 
-  padding: 12px; /* 用 padding 代替 border，這樣才能做出內圈 */
-  box-sizing: border-box;
-}
+    #track-area { 
+      position: relative; 
+      width: 240px; 
+      height: 240px; 
+      border-radius: 50%; 
+      margin: 15px auto; 
+      background: conic-gradient(#4CAF50 0deg, #37474F 0deg); 
+      padding: 12px; 
+      box-sizing: border-box;
+    }
     #home-icon { position: absolute; top: -40px; left: 50%; transform: translateX(-50%); z-index: 2; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; }
     #home-icon img { width: 100%; height: 100%; object-fit: contain; }
     #home-icon span { font-size: 42px; }
-#track-area::after {
-  content: "";
-  position: absolute;
-  top: 12px; left: 12px; right: 12px; bottom: 12px;
-  background: #78909C; /* 跑道中間的草地/空地顏色 */
-  border-radius: 50%;
-  z-index: 1;
-}
 
-/* 🚨 新增：時間剩 1/3 時的緊張閃爍動畫 */
-@keyframes alert-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.4; }
-  100% { opacity: 1; }
-}
-.danger-flash {
-  animation: alert-blink 0.5s infinite; /* 一秒閃兩次，超緊張！ */
-}
+    #track-area::after {
+      content: "";
+      position: absolute;
+      top: 12px; left: 12px; right: 12px; bottom: 12px;
+      background: #78909C; 
+      border-radius: 50%;
+      z-index: 1;
+    }
 
-
+    /* 🚨 時間剩 1/3 時的緊張閃爍動畫 */
+    @keyframes alert-blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+    .danger-flash {
+      animation: alert-blink 0.5s infinite; 
+    }
     
-    /* ⚡ 關鍵優化：將車車指針 z-index 設為 3，強制壓在房子 (z-index: 2) 的前面！ */
     #racing-pointer { position: absolute; top: 0; left: 50%; width: 10px; height: 120px; transform-origin: bottom center; transform: translateX(-50%) rotate(0deg); transition: transform 1s linear; z-index: 3; }
     .car-on-track { position: absolute; top: -25px; left: -21px; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; }
     .car-on-track img { width: 100%; height: 100%; object-fit: contain; }
     .car-on-track span { font-size: 42px; }
     
-    .timer-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 55px0px; }
+    /* 🛠️ 修正打錯字：55px0px 改為正常間距 20px */
+    .timer-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
     .btn-row { display: flex; justify-content: center; gap: 8px; }
     .action-btn { font-size: 16px; font-weight: bold; padding: 10px 16px; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 0 #555; }
     .action-btn:active { transform: translateY(4px); box-shadow: none; }
@@ -86,8 +84,10 @@
     .b-purple { background: #9C27B0; box-shadow: 0 4px 0 #4A148C; }
     input[type="number"] { font-size: 20px; width: 60px; text-align: center; border: 3px solid #9C27B0; border-radius: 10px; padding: 2px; }
     
-    #canvas-holder { width: 100%; aspect-ratio: 4 / 3; background: #FFFFFF; border-radius: 15px; overflow: hidden; border: 4px solid #FFE082;touch-action: none; }
-    .canvas-selectors { display: flex; justify-content: center; gap: 10px; margin-bottom: 55px0px; }
+    #canvas-holder { width: 100%; aspect-ratio: 4 / 3; background: #FFFFFF; border-radius: 15px; overflow: hidden; border: 4px solid #FFE082; touch-action: none; }
+    
+    /* 🛠️ 修正打錯字：55px0px 改為正常間距 15px */
+    .canvas-selectors { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
     .stamp-btn { font-size: 16px; padding: 8px 12px; border-radius: 10px; border: 2px solid #FF8F00; background: white; cursor: pointer; }
     .stamp-btn.active { background: #FF8F00; color: white; }
     
@@ -113,7 +113,6 @@
   <div class="main-container">
     <div id="panel-display" class="mode-panel">
       
-      <!-- 自由挑選區 (新增獨立 ID 方便單獨控制隱藏) -->
       <div id="selector-zone" class="selector-container">
         <div id="runner-title" style="font-size:14px; font-weight:bold; color:#5D4037; text-align:left; margin-left:5px;">🌟 挑選今天的主角：</div>
         <div id="runner-buttons" class="selector-row"></div>
@@ -138,7 +137,7 @@
           <button class="action-btn b-red" onclick="triggerCountdown(3)">3分鐘</button>
           <button class="action-btn b-orange" onclick="triggerCountdown(5)">5分鐘</button>
         </div>
-        <div class="btn-row" style="margin-top:50px;">
+        <div class="btn-row" style="margin-top:20px;">
           <span>自訂：</span>
           <input type="number" id="custom-min" value="2" min="1" max="60">
           <span>分</span>
@@ -181,9 +180,6 @@
     let traceParticles = [];
     let p5Images = {};
 
-    // ==========================================
-    // 自訂百寶箱
-    // ==========================================
     const runnerChoices = [
       { label: "車車", icon: "https://cdn-icons-png.flaticon.com/128/2367/2367773.png" },        
       { label: "獅子", icon: "https://cdn-icons-png.flaticon.com/128/6583/6583476.png" },
@@ -226,7 +222,6 @@
 
     let carPool = ['https://cdn-icons-png.flaticon.com/128/2367/2367773.png', '🚓', '🚒', '🚜', '🚌', '🚚'];
     let animalPool = ['https://cdn-icons-png.flaticon.com/128/6583/6583476.png', 'https://cdn-icons-png.flaticon.com/128/6583/6583476.png', '🐘', '🐸', '🐵', '🐼', '🐰','https://cdn-icons-png.flaticon.com/128/6260/6260379.png'];
-    // ==========================================
 
     function isUrl(str) { return str.startsWith('http'); }
 
@@ -239,7 +234,6 @@
     }
 
     function buildSelectors() {
-      // 主角列
       const rContainer = document.getElementById('runner-buttons');
       rContainer.innerHTML = "";
       runnerChoices.forEach((item, idx) => {
@@ -260,7 +254,6 @@
         rContainer.appendChild(btn);
       });
 
-      // 終點列
       const dContainer = document.getElementById('destination-buttons');
       dContainer.innerHTML = "";
       destinationChoices.forEach((item, idx) => {
@@ -333,7 +326,6 @@
       document.getElementById('panel-canvas').style.display = (tabName==='canvas') ? 'block' : 'none';
       document.getElementById('panel-learn').style.display = (tabName==='learn') ? 'block' : 'none';
       
-      // ⚡ 核心優化：如果是純倒數，直接把「選房子」的標題跟按鈕排全部隱藏
       document.getElementById('selector-zone').style.display = (tabName==='timer'||tabName==='racing') ? 'flex' : 'none';
       document.getElementById('dest-title').style.display = (tabName==='racing') ? 'block' : 'none';
       document.getElementById('destination-buttons').style.display = (tabName==='racing') ? 'flex' : 'none';
@@ -341,6 +333,11 @@
       document.getElementById('track-area').style.display = (tabName==='racing') ? 'block' : 'none';
       document.getElementById('timer-ui').style.display = (tabName==='timer'||tabName==='racing') ? 'block' : 'none';
       document.getElementById('status-msg').innerText = "";
+
+      // ⚡ 切換分頁時重置跑道顏色與閃爍
+      let track = document.getElementById('track-area');
+      track.classList.remove('danger-flash');
+      track.style.background = `conic-gradient(#4CAF50 0deg, #37474F 0deg)`;
 
       if(tabName === 'clock') {
         document.getElementById('car-stage').innerHTML = '<span class="stage-txt">⏰</span>';
@@ -385,7 +382,6 @@
       let hero = runnerChoices[activeRunnerIdx].label;
       let home = destinationChoices[activeDestIdx].label;
       
-      // ⚡ 語音優化：純倒數模式時不唸出「回目的地」
       if (activeTab === 'racing') {
         speak(`小${hero}準備出發！倒數 ${mins} 分鐘回${home}`);
       } else {
@@ -395,20 +391,23 @@
       loopTimer = setInterval(() => {
         secondsLeft--;
         document.getElementById('big-timer').innerText = `${Math.floor(secondsLeft/60).toString().padStart(2,'0')}:${(secondsLeft%60).toString().padStart(2,'0')}`;
-        // ⚡ 【新增】計算跑過的比例（度數）
+        
         let pct = 1 - (secondsLeft / initialSeconds);
         let degrees = pct * 360;
         let track = document.getElementById('track-area');
         
-        // 沿路把開過的路塗成亮綠色 (#4CAF50)
+        // 沿路把開過的路塗成亮綠色
         track.style.background = `conic-gradient(#4CAF50 ${degrees}deg, #37474F ${degrees}deg)`;
 
-        // 🚨 【新增】當時間只剩 1/3 的時候，發出大提醒！
+        // 🚨 關鍵修正：剩不到 1/3 的時間，沿路變紅、開啟閃爍、並且大喊一次語音！
         if (secondsLeft > 0 && secondsLeft <= initialSeconds / 3) {
-          track.classList.add('danger-flash'); // 加上閃爍效果
-          track.style.background = `conic-gradient(#F44336 ${degrees}deg, #37474F ${degrees}deg)`; // 跑過的路變成紅色警告！
+          if (secondsLeft === Math.floor(initialSeconds / 3)) {
+            speak("哇！快點快點！時間快要到囉！");
+          }
+          track.classList.add('danger-flash'); 
+          track.style.background = `conic-gradient(#F44336 ${degrees}deg, #37474F ${degrees}deg)`; 
         } else {
-          track.classList.remove('danger-flash'); // 還沒到時間就不要閃
+          track.classList.remove('danger-flash'); 
         }
 
         if(activeTab === 'racing') {
@@ -419,6 +418,7 @@
         if(secondsLeft <= 0) {
           clearInterval(loopTimer);
           document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(360deg)`;
+          track.classList.remove('danger-flash'); // 到達後停止閃爍
           if(activeTab === 'racing') {
             document.getElementById('status-msg').innerText = `🎉 成功回到${home}囉！`;
             speak(`時間到囉！小${hero}安全回到溫暖的${home}了！`);
@@ -481,7 +481,7 @@
       }
     }
 
-function resizeCanvasToContainer() {
+    function resizeCanvasToContainer() {
       const holder = document.getElementById('canvas-holder');
       if (holder && holder.clientWidth > 0) { resizeCanvas(holder.clientWidth, holder.clientHeight); }
     }
