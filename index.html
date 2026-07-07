@@ -4,21 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <base target="_top">
-  <title>角色冒險倒數魔法樂園-優化版</title>
+  <title>角色冒險倒數魔法樂園-全能學習版</title>
+  <!-- 引入 p5.js 核心庫 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
   <style>
     :root { --menu-bg: #3E2723; --panel-bg: #FFFFFF; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background-color: #FFFDE7; font-family: "Microsoft JhengHei", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+    body { margin: 0; padding: 0; background-color: #FFFDE7; font-family: "Microsoft JhengHei", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
     
     /* 頂部導覽列 */
-    .menu-bar { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 600px; gap: 4px; padding: 10px 5px; }
+    .menu-bar { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 600px; gap: 4px; padding: 10px 5px; flex-shrink: 0; }
     .menu-btn { font-size: 13px; font-weight: bold; padding: 8px 2px; border: 2px solid var(--menu-bg); border-radius: 10px; background: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 58px; }
     .menu-btn.active { background: #FFD600; color: var(--menu-bg); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
     .menu-btn img { width: 18px; height: 18px; object-fit: contain; }
     .menu-btn span { font-size: 15px; }
 
-    .main-container { width: 100%; max-width: 500px; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+    .main-container { width: 100%; max-width: 500px; padding: 10px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
     .mode-panel { background: var(--panel-bg); border-radius: 20px; padding: 18px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); text-align: center; }
     
     /* 橫向滾動選擇列 */
@@ -31,7 +32,6 @@
     .select-btn img { width: 20px; height: 20px; object-fit: contain; }
     .select-btn span { font-size: 18px; line-height: 1; }
 
-    /* 🛠️ 修正打錯字：55px0pxpx 0 改為正常邊距 20px 0 */
     #big-timer { font-size: 120px; font-weight: bold; color: #1565C0; margin: 20px 0; text-shadow: 4px 4px 0px #E3F2FD; cursor: pointer; }
     
     /* 跑道與中心終點 */
@@ -58,22 +58,18 @@
       z-index: 1;
     }
 
-    /* 🚨 時間剩 1/3 時的緊張閃爍動畫 */
     @keyframes alert-blink {
       0% { opacity: 1; }
       50% { opacity: 0.4; }
       100% { opacity: 1; }
     }
-    .danger-flash {
-      animation: alert-blink 0.5s infinite; 
-    }
+    .danger-flash { animation: alert-blink 0.5s infinite; }
     
     #racing-pointer { position: absolute; top: 0; left: 50%; width: 10px; height: 120px; transform-origin: bottom center; transform: translateX(-50%) rotate(0deg); transition: transform 1s linear; z-index: 3; }
     .car-on-track { position: absolute; top: -25px; left: -21px; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; }
     .car-on-track img { width: 100%; height: 100%; object-fit: contain; }
     .car-on-track span { font-size: 42px; }
     
-    /* 🛠️ 修正打錯字：55px0px 改為正常間距 20px */
     .timer-controls { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
     .btn-row { display: flex; justify-content: center; gap: 8px; }
     .action-btn { font-size: 16px; font-weight: bold; padding: 10px 16px; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 0 #555; }
@@ -86,18 +82,30 @@
     
     #canvas-holder { width: 100%; aspect-ratio: 4 / 3; background: #FFFFFF; border-radius: 15px; overflow: hidden; border: 4px solid #FFE082; touch-action: none; }
     
-    /* 🛠️ 修正打錯字：55px0px 改為正常間距 15px */
     .canvas-selectors { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
     .stamp-btn { font-size: 16px; padding: 8px 12px; border-radius: 10px; border: 2px solid #FF8F00; background: white; cursor: pointer; }
     .stamp-btn.active { background: #FF8F00; color: white; }
     
-    .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
-    .n-btn { font-size: 28px; font-weight: bold; background: #FFF9C4; border: 3px solid #FBC02D; border-radius: 12px; padding: 10px 2px; cursor: pointer; }
+    /* 學習模式專用區塊 */
+    .learn-subtabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
+    .subtab-btn { font-size: 15px; font-weight: bold; padding: 6px 12px; border-radius: 8px; border: 2px solid #8BC34A; background: white; cursor: pointer; }
+    .subtab-btn.active { background: #8BC34A; color: #1B5E20; }
+
+    .num-grid { display: grid; gap: 8px; margin-top: 10px; padding-bottom: 20px; }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
     
+    /* 大按鈕（數字） */
+    .n-btn { font-size: 28px; font-weight: bold; background: #FFF9C4; border: 3px solid #FBC02D; border-radius: 12px; padding: 10px 2px; cursor: pointer; }
+    /* 小按鈕（注音與ABC） */
+    .char-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #E1F5FE; border: 3px solid #03A9F4; border-radius: 12px; padding: 8px 2px; cursor: pointer; }
+    .char-main { font-size: 24px; font-weight: bold; color: #0277BD; line-height: 1.2; }
+    .char-sub { font-size: 12px; color: #555; margin-top: 2px; }
+
     #car-stage { min-height: 55px; margin: 8px 0; display: flex; justify-content: center; align-items: center; gap: 5px; flex-wrap: wrap; }
     .stage-img { width: 45px; height: 45px; object-fit: contain; }
     .stage-txt { font-size: 42px; }
-    #status-msg { font-size: 26px; color: #D32F2F; font-weight: bold; min-height: 32px; }
+    #status-msg { font-size: 24px; color: #D32F2F; font-weight: bold; min-height: 32px; }
   </style>
 </head>
 <body>
@@ -155,8 +163,15 @@
     </div>
 
     <div id="panel-learn" class="mode-panel" style="display:none;">
-      <div style="font-weight:bold; font-size:18px; color:#5D4037;">🚌 點數字，跟我一起讀口訣！</div>
-      <div class="num-grid">
+      <div class="learn-subtabs">
+        <button id="sub-123" class="subtab-btn active" onclick="switchLearnMode('123')">123 數字</button>
+        <button id="sub-bpmf" class="subtab-btn" onclick="switchLearnMode('bpmf')">ㄅㄆㄇ 注音</button>
+        <button id="sub-abc" class="subtab-btn" onclick="switchLearnMode('abc')">ABC 字母</button>
+      </div>
+      <div style="font-weight:bold; font-size:16px; color:#5D4037; margin-bottom:8px;" id="learn-subtitle">🚌 點按鈕，跟我一起讀！</div>
+      
+      <!-- 數字區塊 -->
+      <div id="grid-123" class="num-grid grid-5">
         <button class="n-btn" onclick="pressMnemonic(1)">1</button>
         <button class="n-btn" onclick="pressMnemonic(2)">2</button>
         <button class="n-btn" onclick="pressMnemonic(3)">3</button>
@@ -168,6 +183,12 @@
         <button class="n-btn" onclick="pressMnemonic(9)">9</button>
         <button class="n-btn" onclick="pressMnemonic(0)">0</button>
       </div>
+
+      <!-- ㄅㄆㄇ區塊 -->
+      <div id="grid-bpmf" class="num-grid grid-4" style="display:none;"></div>
+
+      <!-- ABC區塊 -->
+      <div id="grid-abc" class="num-grid grid-4" style="display:none;"></div>
     </div>
   </div>
 
@@ -204,33 +225,45 @@
       timer:  { label: "倒數", icon: "🔢" },
       racing: { label: "回家", icon: "https://cdn-icons-png.flaticon.com/128/2163/2163350.png" },
       canvas: { label: "畫布", icon: "🎨" },
-      learn:  { label: "口訣", icon: "🧠" }
+      learn:  { label: "學習", icon: "🧠" }
     };
 
+    // --- 學習資料庫 ---
     const mnemonicData = {
-      1: { text: "鉛筆 1", icon: "✏️" }, 
-      2: { text: "鴨子 2", icon: "🦆" },
-      3: { text: "蝴蝶 3", icon: "🦋" },
-      4: { text: "帆船 4", icon: "⛵" },
-      5: { text: "勾勾 5", icon: "🪝" },
-      6: { text: "大肚 6", icon: "🤰" },
-      7: { text: "拐杖 7", icon: "🦯" },
-      8: { text: "雪人 8", icon: "☃️" },
-      9: { text: "氣球 9", icon: "🎈" },
+      1: { text: "鉛筆 1", icon: "✏️" }, 2: { text: "鴨子 2", icon: "🦆" }, 3: { text: "蝴蝶 3", icon: "🦋" },
+      4: { text: "帆船 4", icon: "⛵" }, 5: { text: "勾勾 5", icon: "🪝" }, 6: { text: "大肚 6", icon: "🤰" },
+      7: { text: "拐杖 7", icon: "🦯" }, 8: { text: "雪人 8", icon: "☃️" }, 9: { text: "氣球 9", icon: "🎈" },
       0: { text: "甜甜圈 0", icon: "🍩" }
     };
 
+    const bpmfData = [
+      ['ㄅ','斑馬','🦓'],['ㄆ','蘋果','🍎'],['ㄇ','帽子','🧢'],['ㄈ','飛機','✈️'],['ㄉ','大象','🐘'],
+      ['ㄊ','兔子','🐰'],['ㄋ','鳥','🐦'],['ㄌ','老虎','🐯'],['ㄍ','狗','🐶'],['ㄎ','恐龍','🦖'],
+      ['ㄏ','猴子','🐒'],['ㄐ','雞','🐔'],['ㄑ','企鵝','🐧'],['ㄒ','西瓜','🍉'],['ㄓ','蜘蛛','🕷️'],
+      ['ㄔ','車子','🚗'],['ㄕ','獅子','🦁'],['ㄖ','日曆','📅'],['ㄗ','足球','⚽'],['ㄘ','草莓','🍓'],
+      ['ㄙ','傘','☂️'],['ㄧ','衣服','👕'],['ㄨ','烏龜','🐢'],['ㄩ','魚','🐟'],['ㄚ','鴨子','🦆'],
+      ['ㄛ','喔','😲'],['ㄜ','鵝','🦢'],['ㄝ','鞋子','👞'],['ㄞ','愛心','❤️'],['ㄟ','飛盤','🥏'],
+      ['ㄠ','貓咪','🐱'],['ㄡ','海鷗','🐦'],['ㄢ','帆船','⛵'],['ㄣ','閃電','⚡'],['ㄤ','胖豬','🐷'],
+      ['ㄥ','蜜蜂','🐝'],['ㄦ','耳朵','👂']
+    ];
+
+    const abcData = [
+      ['A','Apple','🍎'],['B','Bear','🐻'],['C','Cat','🐱'],['D','Dog','🐶'],['E','Elephant','🐘'],
+      ['F','Frog','🐸'],['G','Giraffe','🦒'],['H','Horse','🐴'],['I','Ice cream','🍦'],['J','Juice','🧃'],
+      ['K','Kangaroo','🦘'],['L','Lion','🦁'],['M','Monkey','🐒'],['N','Nest','🪹'],['O','Owl','🦉'],
+      ['P','Pig','🐷'],['Q','Queen','👑'],['R','Rabbit','🐰'],['S','Sun','☀️'],['T','Tiger','🐯'],
+      ['U','Umbrella','☂️'],['V','Van','🚐'],['W','Whale','🐳'],['X','X-ray','🩻'],['Y','Yoyo','🪀'],
+      ['Z','Zebra','🦓']
+    ];
+
     let carPool = ['https://cdn-icons-png.flaticon.com/128/2367/2367773.png', '🚓', '🚒', '🚜', '🚌', '🚚'];
-    let animalPool = ['https://cdn-icons-png.flaticon.com/128/6583/6583476.png', 'https://cdn-icons-png.flaticon.com/128/6583/6583476.png', '🐘', '🐸', '🐵', '🐼', '🐰','https://cdn-icons-png.flaticon.com/128/6260/6260379.png'];
+    let animalPool = ['https://cdn-icons-png.flaticon.com/128/6583/6583476.png', '🐘', '🐸', '🐵', '🐼', '🐰','https://cdn-icons-png.flaticon.com/128/6260/6260379.png'];
 
     function isUrl(str) { return str.startsWith('http'); }
 
     function renderIconToElement(targetEl, iconStr, className="stage-txt") {
-      if(isUrl(iconStr)) {
-        targetEl.innerHTML = `<img src="${iconStr}" class="stage-img">`;
-      } else {
-        targetEl.innerHTML = `<span class="${className}">${iconStr}</span>`;
-      }
+      if(isUrl(iconStr)) { targetEl.innerHTML = `<img src="${iconStr}" class="stage-img">`; } 
+      else { targetEl.innerHTML = `<span class="${className}">${iconStr}</span>`; }
     }
 
     function buildSelectors() {
@@ -240,17 +273,12 @@
         let btn = document.createElement('button');
         btn.className = `select-btn ${idx === activeRunnerIdx ? 'active' : ''}`;
         btn.onclick = () => selectRunner(idx);
-        
         let iconSpan = document.createElement('div');
         if(isUrl(item.icon)) { iconSpan.innerHTML = `<img src="${item.icon}">`; }
         else { iconSpan.innerHTML = `<span>${item.icon}</span>`; }
-        
         let txtSpan = document.createElement('span');
-        txtSpan.innerText = item.label;
-        txtSpan.style.fontSize = "13px";
-        
-        btn.appendChild(iconSpan);
-        btn.appendChild(txtSpan);
+        txtSpan.innerText = item.label; txtSpan.style.fontSize = "13px";
+        btn.appendChild(iconSpan); btn.appendChild(txtSpan);
         rContainer.appendChild(btn);
       });
 
@@ -260,24 +288,18 @@
         let btn = document.createElement('button');
         btn.className = `select-btn ${idx === activeDestIdx ? 'active' : ''}`;
         btn.onclick = () => selectDestination(idx);
-        
         let iconSpan = document.createElement('div');
         if(isUrl(item.icon)) { iconSpan.innerHTML = `<img src="${item.icon}">`; }
         else { iconSpan.innerHTML = `<span>${item.icon}</span>`; }
-        
         let txtSpan = document.createElement('span');
-        txtSpan.innerText = item.label;
-        txtSpan.style.fontSize = "13px";
-        
-        btn.appendChild(iconSpan);
-        btn.appendChild(txtSpan);
+        txtSpan.innerText = item.label; txtSpan.style.fontSize = "13px";
+        btn.appendChild(iconSpan); btn.appendChild(txtSpan);
         dContainer.appendChild(btn);
       });
     }
 
     function selectRunner(idx) {
-      activeRunnerIdx = idx;
-      buildSelectors();
+      activeRunnerIdx = idx; buildSelectors();
       let trackActor = document.getElementById('track-actor');
       renderIconToElement(trackActor, runnerChoices[idx].icon, "");
       if(secondsLeft > 0) { updateVisualStage(); } 
@@ -286,10 +308,28 @@
     }
 
     function selectDestination(idx) {
-      activeDestIdx = idx;
-      buildSelectors();
+      activeDestIdx = idx; buildSelectors();
       renderIconToElement(document.getElementById('home-icon'), destinationChoices[idx].icon, "");
       speak(`選定終點：${destinationChoices[idx].label}`);
+    }
+
+    // 動態產生學習網格
+    function buildLearningGrids() {
+      const bpmfContainer = document.getElementById('grid-bpmf');
+      bpmfData.forEach(item => {
+        let btn = document.createElement('button'); btn.className = 'char-btn';
+        btn.onclick = () => pressLearningChar(item[0], item[1], item[2]);
+        btn.innerHTML = `<span class="char-main">${item[0]}</span><span class="char-sub">${item[2]} ${item[1]}</span>`;
+        bpmfContainer.appendChild(btn);
+      });
+
+      const abcContainer = document.getElementById('grid-abc');
+      abcData.forEach(item => {
+        let btn = document.createElement('button'); btn.className = 'char-btn';
+        btn.onclick = () => pressLearningChar(item[0], item[1], item[2]);
+        btn.innerHTML = `<span class="char-main">${item[0]}</span><span class="char-sub">${item[2]} ${item[1]}</span>`;
+        abcContainer.appendChild(btn);
+      });
     }
 
     function initInterfaceIcons() {
@@ -302,11 +342,11 @@
           else { iconWrapper.innerHTML = `<span>${navButtonsConfig[key].icon}</span>`; }
           let textWrapper = document.createElement('div');
           textWrapper.innerText = navButtonsConfig[key].label;
-          btn.appendChild(iconWrapper);
-          btn.appendChild(textWrapper);
+          btn.appendChild(iconWrapper); btn.appendChild(textWrapper);
         }
       }
       buildSelectors();
+      buildLearningGrids();
       renderIconToElement(document.getElementById('home-icon'), destinationChoices[activeDestIdx].icon, "");
     }
 
@@ -324,7 +364,21 @@
       
       document.getElementById('panel-display').style.display = (tabName==='clock'||tabName==='timer'||tabName==='racing') ? 'block' : 'none';
       document.getElementById('panel-canvas').style.display = (tabName==='canvas') ? 'block' : 'none';
-      document.getElementById('panel-learn').style.display = (tabName==='learn') ? 'block' : 'none';
+      
+      let pLearn = document.getElementById('panel-learn');
+      if(tabName === 'learn') {
+        pLearn.style.display = 'block';
+        // 因為學習面板需要放入主畫面區塊顯示，所以把原本在 panel-display 的狀態列移過來
+        pLearn.insertBefore(document.getElementById('car-stage'), pLearn.firstChild);
+        pLearn.insertBefore(document.getElementById('status-msg'), pLearn.firstChild);
+        document.getElementById('status-msg').innerText = "";
+        document.getElementById('car-stage').innerHTML = "";
+      } else {
+        pLearn.style.display = 'none';
+        let pDisp = document.getElementById('panel-display');
+        pDisp.insertBefore(document.getElementById('car-stage'), document.getElementById('timer-ui'));
+        pDisp.insertBefore(document.getElementById('status-msg'), document.getElementById('timer-ui'));
+      }
       
       document.getElementById('selector-zone').style.display = (tabName==='timer'||tabName==='racing') ? 'flex' : 'none';
       document.getElementById('dest-title').style.display = (tabName==='racing') ? 'block' : 'none';
@@ -334,7 +388,6 @@
       document.getElementById('timer-ui').style.display = (tabName==='timer'||tabName==='racing') ? 'block' : 'none';
       document.getElementById('status-msg').innerText = "";
 
-      // ⚡ 切換分頁時重置跑道顏色與閃爍
       let track = document.getElementById('track-area');
       track.classList.remove('danger-flash');
       track.style.background = `conic-gradient(#4CAF50 0deg, #37474F 0deg)`;
@@ -344,7 +397,7 @@
         launchClockMode(); speak("現在時間模式");
       } else {
         document.getElementById('big-timer').innerText = "00:00";
-        renderIconToElement(document.getElementById('car-stage'), runnerChoices[activeRunnerIdx].icon);
+        if(tabName!=='learn') renderIconToElement(document.getElementById('car-stage'), runnerChoices[activeRunnerIdx].icon);
         if(tabName === 'timer') speak("數字倒數模式");
         if(tabName === 'racing') {
           document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(0deg)`;
@@ -352,10 +405,54 @@
           speak("跑回家模式");
         }
         if(tabName === 'canvas') { speak("魔法畫布"); resizeCanvasToContainer(); }
-        if(tabName === 'learn') speak("數字口訣大聲公");
+        if(tabName === 'learn') { switchLearnMode('123'); }
       }
     }
 
+    // --- 學習模式切換邏輯 ---
+    function switchLearnMode(mode) {
+      document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('sub-' + mode).classList.add('active');
+      
+      document.getElementById('grid-123').style.display = mode === '123' ? 'grid' : 'none';
+      document.getElementById('grid-bpmf').style.display = mode === 'bpmf' ? 'grid' : 'none';
+      document.getElementById('grid-abc').style.display = mode === 'abc' ? 'grid' : 'none';
+
+      document.getElementById('status-msg').innerText = "";
+      document.getElementById('car-stage').innerHTML = "";
+
+      if(mode === '123') speak("數字口訣");
+      if(mode === 'bpmf') speak("注音符號");
+      if(mode === 'abc') speak("英文字母");
+    }
+
+    function pressMnemonic(num) {
+      let info = mnemonicData[num]; speak(info.text);
+      document.getElementById('status-msg').innerText = info.text;
+      let container = document.getElementById('car-stage');
+      container.innerHTML = "";
+      let count = (num == 0) ? 1 : num;
+      for(let i=0; i<count; i++) {
+        let span = document.createElement('span');
+        renderIconToElement(span, info.icon, "stage-txt");
+        container.appendChild(span);
+      }
+    }
+
+    function pressLearningChar(char, word, icon) {
+      speak(`${char}，${word}`);
+      document.getElementById('status-msg').innerText = `${char} ${icon} ${word}`;
+      let container = document.getElementById('car-stage');
+      container.innerHTML = "";
+      // 獎勵顯示 3 個圖案
+      for(let i=0; i<3; i++) {
+        let span = document.createElement('span');
+        renderIconToElement(span, icon, "stage-txt");
+        container.appendChild(span);
+      }
+    }
+
+    // --- 時鐘與計時邏輯 ---
     function launchClockMode() {
       const run = () => {
         let d = new Date();
@@ -382,11 +479,8 @@
       let hero = runnerChoices[activeRunnerIdx].label;
       let home = destinationChoices[activeDestIdx].label;
       
-      if (activeTab === 'racing') {
-        speak(`小${hero}準備出發！倒數 ${mins} 分鐘回${home}`);
-      } else {
-        speak(`小${hero}準備出發！倒數 ${mins} 分鐘`);
-      }
+      if (activeTab === 'racing') speak(`小${hero}準備出發！倒數 ${mins} 分鐘回${home}`);
+      else speak(`小${hero}準備出發！倒數 ${mins} 分鐘`);
 
       loopTimer = setInterval(() => {
         secondsLeft--;
@@ -396,19 +490,13 @@
         let degrees = pct * 360;
         let track = document.getElementById('track-area');
         
-        // 沿路把開過的路塗成亮綠色
         track.style.background = `conic-gradient(#4CAF50 ${degrees}deg, #37474F ${degrees}deg)`;
 
-        // 🚨 關鍵修正：剩不到 1/3 的時間，沿路變紅、開啟閃爍、並且大喊一次語音！
         if (secondsLeft > 0 && secondsLeft <= initialSeconds / 3) {
-          if (secondsLeft === Math.floor(initialSeconds / 3)) {
-            speak("哇！快點快點！時間快要到囉！");
-          }
+          if (secondsLeft === Math.floor(initialSeconds / 3)) { speak("哇！快點快點！時間快要到囉！"); }
           track.classList.add('danger-flash'); 
           track.style.background = `conic-gradient(#F44336 ${degrees}deg, #37474F ${degrees}deg)`; 
-        } else {
-          track.classList.remove('danger-flash'); 
-        }
+        } else { track.classList.remove('danger-flash'); }
 
         if(activeTab === 'racing') {
           document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(${(1-(secondsLeft/initialSeconds))*360}deg)`;
@@ -418,7 +506,7 @@
         if(secondsLeft <= 0) {
           clearInterval(loopTimer);
           document.getElementById('racing-pointer').style.transform = `translateX(-50%) rotate(360deg)`;
-          track.classList.remove('danger-flash'); // 到達後停止閃爍
+          track.classList.remove('danger-flash');
           if(activeTab === 'racing') {
             document.getElementById('status-msg').innerText = `🎉 成功回到${home}囉！`;
             speak(`時間到囉！小${hero}安全回到溫暖的${home}了！`);
@@ -441,28 +529,14 @@
       }
     }
 
-    function pressMnemonic(num) {
-      let info = mnemonicData[num]; speak(info.text);
-      document.getElementById('status-msg').innerText = info.text;
-      let container = document.getElementById('car-stage');
-      container.innerHTML = "";
-      let count = (num == 0) ? 1 : num;
-      for(let i=0; i<count; i++) {
-        let span = document.createElement('span');
-        renderIconToElement(span, info.icon, "stage-txt");
-        container.appendChild(span);
-      }
-    }
-
+    // --- 畫布邏輯 ---
     function setStamp(type) {
       drawingStamp = type;
       document.getElementById('stamp-car').classList.toggle('active', type === 'car');
       document.getElementById('stamp-animal').classList.toggle('active', type === 'animal');
       speak(type === 'car' ? "汽車模式" : "動物模式");
     }
-    function clearCanvas() { traceParticles = []; speak("擦乾淨了"); }
-
-    // --- p5.js 繪圖引擎 ---
+    
     function setup() {
       const holder = document.getElementById('canvas-holder');
       const cv = createCanvas(holder.clientWidth, holder.clientHeight);
@@ -489,28 +563,16 @@
     function windowResized() { resizeCanvasToContainer(); }
     
     function touchMoved() { 
-      if (activeTab === 'canvas') {
-        if (touches.length > 0) {
-          let tx = touches[0].x;
-          let ty = touches[0].y;
-          if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
-            spawnStamp(tx, ty);
-            return false; 
-          } 
-        }
+      if (activeTab === 'canvas' && touches.length > 0) {
+        let tx = touches[0].x, ty = touches[0].y;
+        if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) { spawnStamp(tx, ty); return false; } 
       }
     }
     
     function touchStarted() {
-      if (activeTab === 'canvas') {
-        if (touches.length > 0) {
-          let tx = touches[0].x;
-          let ty = touches[0].y;
-          if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) {
-            spawnStamp(tx, ty);
-            return false; 
-          } 
-        }
+      if (activeTab === 'canvas' && touches.length > 0) {
+        let tx = touches[0].x, ty = touches[0].y;
+        if (tx >= 0 && tx <= width && ty >= 0 && ty <= height) { spawnStamp(tx, ty); return false; } 
       }
     }
 
